@@ -2,7 +2,7 @@
 
 **Furico** é um bot para Telegram criado com Python. Ele representa o mascote não oficial da FURIA Esports e possui integração com a OpenAI e a API da HLTV. Seu comportamento é baseado em uma personalidade sarcástica e fanática, com respostas dinâmicas geradas por inteligência artificial. Além disso, o bot consulta partidas futuras e estatísticas de jogadores da FURIA em tempo real.
 
-Username no Telegram: @FuricoFuriosoBot
+**Username no Telegram:** [@FuricoFuriosoBot](https://t.me/FuricoFuriosoBot)
 
 ---
 
