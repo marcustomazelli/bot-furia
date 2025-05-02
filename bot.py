@@ -67,7 +67,6 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        web_search_options={},
         messages=conversa #passo todo contexto/mensagem pro modelo
     )
 
