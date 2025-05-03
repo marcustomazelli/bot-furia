@@ -57,7 +57,7 @@ Quando o usuário só conversar, você apenas responde na brincadeira. Só traga
 </conversation_behavior>
 
 <data_behavior>
-Você receberá dados atualizados sobre a FURIA (ex: próximas partidas, estatísticas das partidas) embutidos no contexto da conversa, vindos de uma API da HLTV via HTTP.
+Você receberá dados atualizados sobre a FURIA (ex: próximas partidas, estatísticas dos jogadores e notícias sobre esports da HLTV) embutidos no contexto da conversa, vindos de uma API da HLTV via HTTP.
 Sempre use os dados mais recentes imbutidos no contexto da conversa. 
 Sempre use esses dados como sua fonte principal de informação factual.
 Não tente buscar outras fontes ou inventar dados diferentes.
@@ -77,12 +77,16 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     partida_monitorada = await monitorar_partida()
 
-    # Adiciona o contexto
+    noticias = await buscar_contexto_noticias()
+
+   #adico as informações que eu peguei via http na variável conversa
     conversa.append({"role": "system", "content": f"Próxima partida da FURIA no CS:GO:\n{prox_partida}"})
 
-    conversa.append({"role": "system", "content": f"Estatísticas ao vivo da partida da FURIA:\n{partida_monitorada}"})
+    conversa.append({"role": "system", "content": f"Estatísticas dos jogadores da FURIA:\n{partida_monitorada}"})
 
-    conversa.append({"role": "user", "content": texto_usuario}) #adiciono na variável conversa que eu criei
+    conversa.append({"role": "system", "content": f"Últimas notícias do cenário de CS:GO:\n{noticias}"})
+
+    conversa.append({"role": "user", "content": texto_usuario}) #adiciono o que o usuário mandou na conversa
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -135,51 +139,21 @@ async def proxima_partida():
 
 # monitorar partida 
 async def monitorar_partida():
-    # 1. Buscar partidas
-    url = "https://hltv-api.vercel.app/api/matches.json"
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        return "Erro ao acessar a API da HLTV. Tente novamente mais tarde."
-      
-
-    partidas = response.json()
-
-    partida_furia = None
-    for partida in partidas:
-        times = partida.get('teams', [])
-        if not times or len(times) < 2:
-            continue
-
-        time1 = times[0]
-        time2 = times[1]
-
-        if time1.get('id') == 8297 or time2.get('id') == 8297:
-            partida_furia = partida
-            break
-
-    if not partida_furia:
-        return "Nenhuma partida da FURIA encontrada no momento."
-    
-
-    # 2. Buscar estatísticas dos jogadores
+#busco estatísticas dos jogadores
     stats_url = "https://hltv-api.vercel.app/api/match.json"
     stats_response = requests.get(stats_url)
 
     if stats_response.status_code != 200:
         return "Erro ao acessar estatísticas da partida."
         
-
     stats = stats_response.json()
 
-    # 3. Filtrar jogadores da FURIA
+    #filtro jogadores da FURIA
     jogadores_furia = [player for player in stats if player.get('team', '').lower() == 'furia']
 
     if not jogadores_furia:
         return "Nenhuma estatística dos jogadores da FURIA disponível no momento."
         
-
-    # 4. Montar mensagem
     monitorar_partida = "🔥 Estatísticas dos jogadores da FURIA:\n\n"
     for jogador in jogadores_furia:
         monitorar_partida += (
@@ -190,6 +164,36 @@ async def monitorar_partida():
         )
 
     return monitorar_partida
+
+
+# função para buscar notícias da HLTV 
+async def buscar_contexto_noticias():
+    url = "https://hltv-api.vercel.app/api/news.json"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return "Erro ao acessar as notícias da HLTV."
+
+    noticias = response.json()
+
+    if not noticias:
+        return "Não encontrei notícias no momento."
+
+    contexto_noticias = "📰 Últimas notícias do cenário de CS:GO:\n\n"
+    
+    for noticia in noticias[:3]:  # pego as 3 ultimas notícias que saíram 
+        titulo = noticia.get('title', 'Sem título')
+        descricao = noticia.get('description', 'Sem descrição')
+        link = noticia.get('link', 'Sem link')
+        data = noticia.get('time', '').split('T')[0]  # pego só a data, sem a hora
+        contexto_noticias += (
+            f"**{titulo}**\n"
+            f"{descricao}\n"
+            f"Data: {data}\n\n"
+            f"Link: {link}\n\n"
+        )
+
+    return contexto_noticias
 
 # Start the bot 
 app.run_polling()
