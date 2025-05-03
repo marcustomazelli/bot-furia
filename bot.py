@@ -101,13 +101,12 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
 
 
 #funcao que pega a proxima partida da FURIA via http da api da hltv 
-async def proxima_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def proxima_partida():
     url = "https://hltv-api.vercel.app/api/matches.json"
     response = requests.get(url) 
 
     if response.status_code != 200: #se a requisição não retornar 200, ou seja, se der erro eu exibo uma mensagem de erro
-        await update.message.reply_text("Erro ao acessar a API da HLTV. Tente novamente mais tarde.")
-        return
+        return "Erro ao acessar a API da HLTV. Tente novamente mais tarde."
     
     partidas = response.json() #se der certo, eu pego o json da resposta e coloco na variável partidas
 
@@ -130,24 +129,19 @@ async def proxima_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
             horario_br = datetime.strptime(horario, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y %H:%M")
 
             próxima_partida = f"🔥 Próxima partida: {nome_time1} vs {nome_time2}\n🗓️ Data e Hora: {horario_br} (UTC)" #atribui na variavel mensagem o texto que o bot vai retornar com as instruções da prox partida
-            await update.message.reply_text(próxima_partida) 
-            return
+            return próxima_partida
 
-    await update.message.reply_text("Não encontrei próximas partidas da FURIA no momento.")
-
-app.add_handler(CommandHandler("proxima_partida", proxima_partida))
-
-
+    return "Não encontrei próximas partidas da FURIA no momento."
 
 # monitorar partida 
-async def monitorar_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def monitorar_partida():
     # 1. Buscar partidas
     url = "https://hltv-api.vercel.app/api/matches.json"
     response = requests.get(url)
 
     if response.status_code != 200:
-        await update.message.reply_text("Erro ao acessar a API da HLTV. Tente novamente mais tarde.")
-        return
+        return "Erro ao acessar a API da HLTV. Tente novamente mais tarde."
+      
 
     partidas = response.json()
 
@@ -165,16 +159,16 @@ async def monitorar_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
             break
 
     if not partida_furia:
-        await update.message.reply_text("Nenhuma partida da FURIA encontrada no momento.")
-        return
+        return "Nenhuma partida da FURIA encontrada no momento."
+    
 
     # 2. Buscar estatísticas dos jogadores
     stats_url = "https://hltv-api.vercel.app/api/match.json"
     stats_response = requests.get(stats_url)
 
     if stats_response.status_code != 200:
-        await update.message.reply_text("Erro ao acessar estatísticas da partida.")
-        return
+        return "Erro ao acessar estatísticas da partida."
+        
 
     stats = stats_response.json()
 
@@ -182,8 +176,8 @@ async def monitorar_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jogadores_furia = [player for player in stats if player.get('team', '').lower() == 'furia']
 
     if not jogadores_furia:
-        await update.message.reply_text("Nenhuma estatística dos jogadores da FURIA disponível no momento.")
-        return
+        return "Nenhuma estatística dos jogadores da FURIA disponível no momento."
+        
 
     # 4. Montar mensagem
     monitorar_partida = "🔥 Estatísticas dos jogadores da FURIA:\n\n"
@@ -195,10 +189,7 @@ async def monitorar_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• Maps Jogados: {jogador.get('mapsPlayed')}\n\n"
         )
 
-    await update.message.reply_text(monitorar_partida)
-
-app.add_handler(CommandHandler("monitorar_partida", monitorar_partida))
-
+    return monitorar_partida
 
 # Start the bot 
 app.run_polling()
