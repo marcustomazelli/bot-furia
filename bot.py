@@ -55,6 +55,16 @@ Além de responder perguntas, você conversa como um torcedor da FURIA: provoca,
 Não entra em discussões fora do mundo dos esportes.
 Quando o usuário só conversar, você apenas responde na brincadeira. Só traga informações detalhadas se for perguntado explicitamente.
 </conversation_behavior>
+
+<data_behavior>
+Você receberá dados atualizados sobre a FURIA (ex: próximas partidas, estatísticas das partidas) embutidos no contexto da conversa, vindos de uma API da HLTV via HTTP.
+Sempre use os dados mais recentes imbutidos no contexto da conversa. 
+Sempre use esses dados como sua fonte principal de informação factual.
+Não tente buscar outras fontes ou inventar dados diferentes.
+Se o dado estiver presente no contexto, confie nele e responda com base nele.
+Se o dado não existir ou não estiver presente, admita naturalmente que a informação não está disponível agora.
+Nunca adivinhe ou crie estatísticas ou partidas fictícias.
+</data_behavior>
         """
     }
 ]
@@ -62,6 +72,15 @@ Quando o usuário só conversar, você apenas responde na brincadeira. Só traga
 #crio uma função para responder as mensagens com gpt
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text #pego o que o usuário mandou e boto na variável texto_usuario
+
+    prox_partida = await proxima_partida()
+
+    partida_monitorada = await monitorar_partida()
+
+    # Adiciona o contexto
+    conversa.append({"role": "system", "content": f"Próxima partida da FURIA no CS:GO:\n{prox_partida}"})
+
+    conversa.append({"role": "system", "content": f"Estatísticas ao vivo da partida da FURIA:\n{partida_monitorada}"})
 
     conversa.append({"role": "user", "content": texto_usuario}) #adiciono na variável conversa que eu criei
 
@@ -94,7 +113,7 @@ async def proxima_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Filtrar partidas da FURIA
     for partida in partidas:
-        times = partida.get('teams', []) #pedo dentro do json a lista de jogos e puxo os times
+        times = partida.get('teams', []) #pego dentro do json a lista de jogos e puxo os times
         if not times or len(times) < 2: #verifico se se tem mais de 2 times
             continue
 
@@ -110,8 +129,8 @@ async def proxima_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
             from datetime import datetime
             horario_br = datetime.strptime(horario, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y %H:%M")
 
-            mensagem = f"🔥 Próxima partida: {nome_time1} vs {nome_time2}\n🗓️ Data e Hora: {horario_br} (UTC)" #atribui na variavel mensagem o texto que o bot vai retornar com as instruções da prox partida
-            await update.message.reply_text(mensagem)
+            próxima_partida = f"🔥 Próxima partida: {nome_time1} vs {nome_time2}\n🗓️ Data e Hora: {horario_br} (UTC)" #atribui na variavel mensagem o texto que o bot vai retornar com as instruções da prox partida
+            await update.message.reply_text(próxima_partida) 
             return
 
     await update.message.reply_text("Não encontrei próximas partidas da FURIA no momento.")
@@ -167,16 +186,16 @@ async def monitorar_partida(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # 4. Montar mensagem
-    mensagem = "🔥 Estatísticas dos jogadores da FURIA:\n\n"
+    monitorar_partida = "🔥 Estatísticas dos jogadores da FURIA:\n\n"
     for jogador in jogadores_furia:
-        mensagem += (
+        monitorar_partida += (
             f"👤 {jogador.get('nickname')}\n"
             f"• Rating: {jogador.get('rating')}\n"
             f"• KD: {jogador.get('kd')}\n"
             f"• Maps Jogados: {jogador.get('mapsPlayed')}\n\n"
         )
 
-    await update.message.reply_text(mensagem)
+    await update.message.reply_text(monitorar_partida)
 
 app.add_handler(CommandHandler("monitorar_partida", monitorar_partida))
 
