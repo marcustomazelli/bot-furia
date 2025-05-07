@@ -6,6 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 from dotenv import load_dotenv
 import requests
 import asyncio 
+from datetime import datetime
 
 load_dotenv()
 
@@ -21,13 +22,64 @@ app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
 app.add_handler(CommandHandler("hello", hello))
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    intro = (
+        "👋 E aí! Eu sou o Furico, o mascote da FURIA aqui no Telegram.\n\n"
+        "📣 Pode perguntar sobre a FURIA, CS:GO, quais os próximos jogos, stats do jogadores e as últimas notícias do mundo esports.\n"
+    )
+    await update.message.reply_text(intro, parse_mode="Markdown")
+    
+app.add_handler(CommandHandler("start", start))
+
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+data_e_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
 
 conversa = [
     {
         "role": "system",
         "content": """
 Você é o Furico, o mascote oficial da FURIA Esports no Telegram, alimentado pela OpenAI. Você conversa com os fãs da FURIA e responde perguntas sobre a FURIA, esports em geral, e esportes tradicionais quando perguntarem. Você também explica termos, gírias, siglas e expressões da cultura esportiva. Você é ousado, marrento, direto. Às vezes responde seco, sem floreios. Nunca usa emojis. Não tenta ser fofo nem exageradamente educado: você é um torcedor apaixonado, provocador, mas carismático. Nunca rude ou ofensivo.
+
+🕒 Hoje é **{data_e_hora} (horário de Brasília)**.
+
+Preciso que você busque **dados atualizados e confiáveis de três tópicos principais, a partir da data e hora atual**:
+
+1️⃣ **Próximos jogos futuros confirmados da equipe FURIA Esports**:
+- Apenas partidas futuras confirmadas oficialmente no calendário.
+- NÃO inclua partidas passadas ou já finalizadas.
+- Para cada partida, informe:
+    - Nome do adversário
+    - Nome do campeonato ou evento
+    - Data e hora do jogo (convertido para o horário de Brasília, formato dd/mm/yyyy HH:MM)
+- Limite a no máximo as próximas 3 a 5 partidas futuras.
+
+2️⃣ **Estatísticas atualizadas dos jogadores da FURIA na temporada atual**:
+- Trazer dados por jogador da lineup principal.
+- Para cada jogador, mostre:
+    - Nickname
+    - Rating atual da temporada
+    - KD Ratio (Kill/Death)
+    - Número de mapas jogados na temporada
+- Caso alguma estatística não esteja disponível, escreva “não disponível” nesse campo.
+
+3️⃣ **Últimas notícias relevantes do mundo do esports (especialmente CS:GO/CS2)**:
+- Liste as 3 notícias mais recentes e relevantes.
+- Para cada notícia, traga:
+    - Título da notícia
+    - Pequena descrição (1 ou 2 linhas)
+    - Data da publicação
+    - Link da notícia
+
+    ⚠️ Muito importante:
+- NÃO invente ou estime dados.
+- NÃO traga resultados ou estatísticas antigas ou desatualizadas.
+- Traga apenas informações confirmadas em fontes confiáveis (ex: HLTV, Liquipedia, sites oficiais).
+- Caso algum dos três tópicos não tenha informações disponíveis, escreva uma mensagem simples informando isso (ex: “Nenhum jogo futuro da FURIA encontrado no momento.”)
+
+Formate a resposta de forma **clara, resumida, adequada para envio no Telegram**, usando **emojis e markdown** para organizar e destacar as informações.
+
+Agora busque os dados atualizados e responda.
 
 <user_information>
 O usuário está interagindo via Telegram.
@@ -71,29 +123,18 @@ Nunca adivinhe ou crie estatísticas ou partidas fictícias.
 
 #crio uma função para responder as mensagens com gpt
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     texto_usuario = update.message.text #pego o que o usuário mandou e boto na variável texto_usuario
-
-    prox_partida = await proxima_partida()
-
-    partida_monitorada = await monitorar_partida()
-
-    noticias = await buscar_contexto_noticias()
-
-   #adico as informações que eu peguei via http na variável conversa
-    conversa.append({"role": "system", "content": f"Próxima partida da FURIA no CS:GO:\n{prox_partida}"})
-
-    conversa.append({"role": "system", "content": f"Estatísticas dos jogadores da FURIA:\n{partida_monitorada}"})
-
-    conversa.append({"role": "system", "content": f"Últimas notícias do cenário de CS:GO:\n{noticias}"})
 
     conversa.append({"role": "user", "content": texto_usuario}) #adiciono o que o usuário mandou na conversa
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
+    completion = client.chat.completions.create(
+        model="gpt-4o-search-preview",
+        web_search_options={},
         messages=conversa #passo todo contexto/mensagem pro modelo
     )
 
-    resposta_bot = response.choices[0].message.content  # choice é um array dentro do obj response. cada item de choices representa uma possível resposta que o modelo gerou. choices[0] pega a primeira (e única) resposta gerada. depois pega o conteudo da mensagem e empacota na variável resposta_bot
+    resposta_bot = completion.choices[0].message.content  # choice é um array dentro do obj response. cada item de choices representa uma possível resposta que o modelo gerou. choices[0] pega a primeira (e única) resposta gerada. depois pega o conteudo da mensagem e empacota na variável resposta_bot
 
     conversa.append({"role": "assistant", "content": resposta_bot}) #aqui eu add a resposta do bot no contexto da conversa
 
@@ -103,97 +144,6 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Registrar o handler para mensagens de texto comuns
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
 
-
-#funcao que pega a proxima partida da FURIA via http da api da hltv 
-async def proxima_partida():
-    url = "https://hltv-api.vercel.app/api/matches.json"
-    response = requests.get(url) 
-
-    if response.status_code != 200: #se a requisição não retornar 200, ou seja, se der erro eu exibo uma mensagem de erro
-        return "Erro ao acessar a API da HLTV. Tente novamente mais tarde."
-    
-    partidas = response.json() #se der certo, eu pego o json da resposta e coloco na variável partidas
-
-    # Filtrar partidas da FURIA
-    for partida in partidas:
-        times = partida.get('teams', []) #pego dentro do json a lista de jogos e puxo os times
-        if not times or len(times) < 2: #verifico se se tem mais de 2 times
-            continue
-
-        time1 = times[0] #atribuo o primeiro time a variável time1
-        time2 = times[1] #atribuo o segundo time a variável time2
-
-        if time1.get('id') == 8297 or time2.get('id') == 8297: # #verifico se o id do time1 ou do time2 é igual ao id da FURIA 
-            nome_time1 = time1['name'] #atribuo cada conteudo respectivo do time e do horário do jogo as suas variáveis
-            nome_time2 = time2['name']
-            horario = partida['time']  
-
-            #aqui tive que formatar a data e hora do jogo 
-            from datetime import datetime
-            horario_br = datetime.strptime(horario, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y %H:%M")
-
-            próxima_partida = f"🔥 Próxima partida: {nome_time1} vs {nome_time2}\n🗓️ Data e Hora: {horario_br} (UTC)" #atribui na variavel mensagem o texto que o bot vai retornar com as instruções da prox partida
-            return próxima_partida
-
-    return "Não encontrei próximas partidas da FURIA no momento."
-
-# monitorar partida 
-async def monitorar_partida():
-#busco estatísticas dos jogadores
-    stats_url = "https://hltv-api.vercel.app/api/match.json"
-    stats_response = requests.get(stats_url)
-
-    if stats_response.status_code != 200:
-        return "Erro ao acessar estatísticas da partida."
-        
-    stats = stats_response.json()
-
-    #filtro jogadores da FURIA
-    jogadores_furia = [player for player in stats if player.get('team', '').lower() == 'furia']
-
-    if not jogadores_furia:
-        return "Nenhuma estatística dos jogadores da FURIA disponível no momento."
-        
-    monitorar_partida = "🔥 Estatísticas dos jogadores da FURIA:\n\n"
-    for jogador in jogadores_furia:
-        monitorar_partida += (
-            f"👤 {jogador.get('nickname')}\n"
-            f"• Rating: {jogador.get('rating')}\n"
-            f"• KD: {jogador.get('kd')}\n"
-            f"• Maps Jogados: {jogador.get('mapsPlayed')}\n\n"
-        )
-
-    return monitorar_partida
-
-
-# função para buscar notícias da HLTV 
-async def buscar_contexto_noticias():
-    url = "https://hltv-api.vercel.app/api/news.json"
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        return "Erro ao acessar as notícias da HLTV."
-
-    noticias = response.json()
-
-    if not noticias:
-        return "Não encontrei notícias no momento."
-
-    contexto_noticias = "📰 Últimas notícias do cenário de CS:GO:\n\n"
-    
-    for noticia in noticias[:3]:  # pego as 3 ultimas notícias que saíram 
-        titulo = noticia.get('title', 'Sem título')
-        descricao = noticia.get('description', 'Sem descrição')
-        link = noticia.get('link', 'Sem link')
-        data = noticia.get('time', '').split('T')[0]  # pego só a data, sem a hora
-        contexto_noticias += (
-            f"**{titulo}**\n"
-            f"{descricao}\n"
-            f"Data: {data}\n\n"
-            f"Link: {link}\n\n"
-        )
-
-    return contexto_noticias
 
 # Start the bot 
 app.run_polling()
