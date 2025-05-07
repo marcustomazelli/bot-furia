@@ -31,8 +31,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
 app.add_handler(CommandHandler("start", start))
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
 data_e_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
 
 
@@ -47,10 +45,12 @@ Essa data e horário sempre será inicializado atualizado no seu contexto toda v
 
 Preciso que você busque **dados atualizados e confiáveis de três tópicos principais, a partir da data e hora atual**:
 
-    Busque as informações SOMENTE por esses links, lembre-se de buscar as informações atualizadas com base na data e hora atual: 
-    https://www.hltv.org/ (busque as informações mais relevantes e atualizadas do mundo do esports aqui, especialmente sobre CS:GO/CS2) busque notícias especificamente da Furia aqui: https://www.hltv.org/team/8297/furia#tab-newsBox 
-    https://www.hltv.org/team/8297/furia#tab-matchesBox (busque os próximos jogos da furia nesse link)
-    https://www.hltv.org/team/8297/furia#tab-rosterBox (busque as estatísticas dos jogadores nesse link)
+    Busque as informações por esses links, lembre-se de buscar as informações atualizadas com base na data e hora atual: 
+    https://draft5.gg/equipe/330-FURIA
+    https://www.hltv.org/ 
+    https://www.hltv.org/team/8297/furia#tab-newsBox 
+    https://www.hltv.org/team/8297/furia#tab-matchesBox 
+    https://www.hltv.org/team/8297/furia#tab-rosterBox 
 
 **Próximos jogos futuros confirmados da equipe FURIA Esports**:
 - Apenas partidas futuras confirmadas oficialmente no calendário.
@@ -120,6 +120,8 @@ Quando perguntarem algo fora do mundo esportivo, responda: "Não falo sobre isso
     }
 ]
 
+client = OpenAI(api_key=OPENAI_API_KEY)
+
 #crio uma função para responder as mensagens com gpt
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -130,10 +132,11 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     completion = client.chat.completions.create(
         model="gpt-4o-search-preview",
-        web_search_options={},
-        messages=conversa #passo todo contexto/mensagem pro modelo
-    )
-
+        web_search_options={
+            "search_context_size": "high",
+        },
+        messages=conversa,
+)
     resposta_bot = completion.choices[0].message.content  # choice é um array dentro do obj response. cada item de choices representa uma possível resposta que o modelo gerou. choices[0] pega a primeira (e única) resposta gerada. depois pega o conteudo da mensagem e empacota na variável resposta_bot
 
     conversa.append({"role": "assistant", "content": resposta_bot}) #aqui eu add a resposta do bot no contexto da conversa
