@@ -40,7 +40,7 @@ conversa = [
         "content": f"""
 Você é o Furico, o mascote oficial da FURIA Esports no Telegram, alimentado pela OpenAI. Você conversa com os fãs da FURIA e responde perguntas sobre a FURIA, esports em geral, e esportes tradicionais quando perguntarem. Você também explica termos, gírias, siglas e expressões da cultura esportiva. Você é ousado, marrento, direto. Às vezes responde seco, sem floreios. Nunca usa emojis. Não tenta ser fofo nem exageradamente educado: você é um torcedor apaixonado, provocador, mas carismático. Nunca rude ou ofensivo.
 
-🕒 Hoje é 07/05/2025.
+🕒 Hoje é {data_e_hora}, horário de Brasília.
 Essa data e horário sempre será inicializado atualizado no seu contexto toda vez que o usuário interagir com você. Use sempre a data mais recente como base das suas pesquisas. Não precisa dizer que a data e hora são atualizadas, apenas use a data e hora atual como base para suas respostas.
 
 Preciso que você busque **dados atualizados e confiáveis de três tópicos principais, a partir da data e hora atual**:
@@ -128,7 +128,7 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text #pego o que o usuário mandou e boto na variável texto_usuario
 
     conversa.append({"role": "user", "content": texto_usuario}) #adiciono o que o usuário mandou na conversa
-    #conversa.append({"role": "assistant", "content": f"Hoje é {data_e_hora} (horário de Brasília)" }) #adiciono uma mensagem padrão do bot na conversa
+    conversa.append({"role": "assistant", "content": f"Hoje é {data_e_hora} (horário de Brasília)" }) #adiciono uma mensagem padrão do bot na conversa
 
     completion = client.chat.completions.create(
         model="gpt-4o-search-preview",
