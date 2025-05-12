@@ -102,6 +102,10 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto_usuario = update.message.text.lower()
 
+    conversa.append({"role": "user", "content": texto_usuario})
+
+    contexto_completo = ""
+
     partidas = buscar_ultimas_partidas()
     contexto_completo += formatar_partidas(partidas) + "\n"
 
@@ -111,9 +115,10 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats = buscar_stats_jogadores()
     contexto_completo += formatar_stats(stats) + "\n"
 
-    conversa.append({"role": "user", "content": f"Data do banco de dados sobre as próximas partidas, estatísticas dos jogadores e das últimas notícias: {contexto_completo}"})
-
-    conversa.append({"role": "user", "content": texto_usuario})
+    conversa.append({
+    "role": "system",
+    "content": f"Dados da FURIA extraídos do banco:\n\n{contexto_completo.strip()}"
+    })
 
     completion = client.chat.completions.create(
         model="gpt-4o-search-preview",
