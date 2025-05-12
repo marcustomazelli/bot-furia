@@ -2,6 +2,9 @@ from playwright.sync_api import sync_playwright
 from datetime import datetime
 from services.insert import insert_partidas
 
+from services.database import create_tables
+create_tables()
+
 with sync_playwright() as p:
     browser = p.firefox.launch(headless=False)
     page = browser.new_page()

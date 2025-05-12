@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 import requests
 import asyncio 
 from datetime import datetime
+
+from services.database import create_tables
+
+
 from services.query import (
     buscar_ultimas_partidas,
     buscar_ultimas_noticias,
@@ -16,6 +20,8 @@ from services.query import (
     formatar_stats
 )
 from services.insert import insert_resposta
+
+create_tables()
 
 load_dotenv()
 
