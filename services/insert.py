@@ -49,3 +49,13 @@ def insert_partidas(lista_partidas):
 
     conn.commit()
     conn.close()
+
+def insert_resposta(pergunta, resposta):
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO respostas (pergunta, resposta, data) VALUES (?, ?, datetime('now'))",
+        (pergunta, resposta)
+    )
+    conn.commit()
+    conn.close()
