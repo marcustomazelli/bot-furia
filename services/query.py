@@ -68,35 +68,5 @@ def buscar_stats_jogadores():
     return stats
 
 
-# Formatadores para o bot
-
-def formatar_partidas(partidas):
-    if not partidas:
-        return "Nenhuma partida futura da FURIA encontrada."
-
-    resposta = "Próximos jogos da FURIA:\n"
-    for p in partidas:
-        resposta += f"- {p['data']}: vs {p['oponente']}\n"
-    return resposta
 
 
-def formatar_noticias(noticias):
-    if not noticias:
-        return "Nenhuma notícia recente encontrada."
-
-    resposta = "Últimas notícias da FURIA:\n"
-    for n in noticias:
-        resposta += f"- {n['titulo']}\n  Link: {n['link']}\n"
-    return resposta
-
-
-def formatar_stats(stats):
-    if not stats:
-        return "Nenhuma estatística de jogador encontrada."
-
-    resposta = "Estatísticas dos jogadores da FURIA:\n"
-    for s in stats:
-        resposta += (
-            f"- {s['nome']}\n  Rating: {s['rating']} | Mapas: {s['mapas']} | Status: {s['status']}\n"
-        )
-    return resposta
