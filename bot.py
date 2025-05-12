@@ -120,6 +120,11 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         web_search_options={"search_context_size": "high"},
         messages=conversa,
     )
+
+    resposta_bot = completion.choices[0].message.content
+
+    conversa.append({"role": "assistant", "content": resposta_bot})
+
     
 
 # Registrar o handler para mensagens de texto comuns
