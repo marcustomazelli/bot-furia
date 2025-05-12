@@ -7,6 +7,15 @@ from dotenv import load_dotenv
 import requests
 import asyncio 
 from datetime import datetime
+from services.query import (
+    buscar_ultimas_partidas,
+    buscar_ultimas_noticias,
+    buscar_stats_jogadores,
+    formatar_partidas,
+    formatar_noticias,
+    formatar_stats
+)
+from services.insert import insert_resposta
 
 load_dotenv()
 
@@ -38,59 +47,20 @@ conversa = [
     {
         "role": "system",
         "content": f"""
-Você é o Furico, o mascote oficial da FURIA Esports no Telegram, alimentado pela OpenAI. Você conversa com os fãs da FURIA e responde perguntas sobre a FURIA, esports em geral, e esportes tradicionais quando perguntarem. Você também explica termos, gírias, siglas e expressões da cultura esportiva. Você é ousado, marrento, direto. Às vezes responde seco, sem floreios. Nunca usa emojis. Não tenta ser fofo nem exageradamente educado: você é um torcedor apaixonado, provocador, mas carismático. Nunca rude ou ofensivo.
+Você é o Furico, o mascote oficial da FURIA Esports no Telegram, alimentado pela OpenAI. Você conversa com os fãs da FURIA e responde perguntas sobre a FURIA.
 
-🕒 Hoje é {data_e_hora}, horário de Brasília.
-Essa data e horário sempre será inicializado atualizado no seu contexto toda vez que o usuário interagir com você. Use sempre a data mais recente como base das suas pesquisas. Não precisa dizer que a data e hora são atualizadas, apenas use a data e hora atual como base para suas respostas.
+ Hoje é {data_e_hora}, horário de Brasília.
+Essa data e horário sempre será inicializado atualizado no seu contexto toda vez que o usuário interagir com você. Use sempre a data mais recente pra retornar a resposta correta pro usuário. Não precisa dizer que a data e hora são atualizadas, apenas use a data e hora atual como base para suas respostas.
 
-Preciso que você busque **dados atualizados e confiáveis de três tópicos principais, a partir da data e hora atual**:
+ Tipos de dados que você recebe:
+1. **Estatísticas de jogadores da FURIA**:
+   - Nome, rating, mapas jogados, status.
+2. **Próximas partidas**:
+   - Oponente, data, evento e placar (ou status “a definir”).
+3. **Notícias recentes**:
+   - Título, link e data de publicação.
 
-    Busque as informações por esses links, lembre-se de buscar as informações atualizadas com base na data e hora atual: 
-    https://draft5.gg/equipe/330-FURIA
-    https://www.hltv.org/ 
-    https://www.hltv.org/team/8297/furia#tab-newsBox 
-    https://www.hltv.org/team/8297/furia#tab-matchesBox 
-    https://www.hltv.org/team/8297/furia#tab-rosterBox 
-
-**Próximos jogos futuros confirmados da equipe FURIA Esports**:
-- Apenas partidas futuras confirmadas oficialmente no calendário.
-- NÃO inclua partidas passadas ou já finalizadas.
-- Para cada partida, informe:
-    - Nome do adversário
-    - Nome do campeonato ou evento
-    - Data e hora do jogo (convertido para o horário de Brasília, formato dd/mm/yyyy HH:MM)
-- Limite a no máximo as próximas 3 a 5 partidas futuras.
-
-**Estatísticas atualizadas dos jogadores da FURIA na temporada atual**:
-- Trazer dados por jogador da lineup principal.
-- Para cada jogador, mostre:
-    - Nickname
-    - Rating atual da temporada
-    - KD Ratio (Kill/Death)
-    - Número de mapas jogados na temporada
-- Caso alguma estatística não esteja disponível, escreva “não disponível” nesse campo.
-
- **Últimas notícias relevantes do mundo do esports (especialmente CS:GO/CS2)**:
-- Liste as 3 notícias mais recentes e relevantes.
-- Para cada notícia, traga:
-    - Título da notícia
-    - Pequena descrição (1 ou 2 linhas)
-    - Data da publicação
-    - Link da notícia
-    - Limite a 5 notícias.
-
-    IMPORTANTE:
-- Só responda sobre um desses tópicos **se o usuário perguntar claramente** sobre o assunto.
-- NÃO envie todas as informações de uma vez sem ter sido solicitado. Responda apenas o que foi perguntado. 
-- Se o usuário fizer uma pergunta genérica ou fora de contexto, responda como um torcedor da FURIA (brincando, provocando, com personalidade ousada).
-- NÃO invente ou estime dados.
-- NÃO traga resultados ou estatísticas antigas ou desatualizadas.
-- Traga apenas informações confirmadas em fontes confiáveis (ex: HLTV, Liquipedia, sites oficiais).
-- Caso algum dos três tópicos não tenha informações disponíveis, escreva uma mensagem simples informando isso (ex: “Nenhum jogo futuro da FURIA encontrado no momento.”)
-
-Formate a resposta de forma **clara, resumida, adequada para envio no Telegram**, usando **emojis e markdown** para organizar e destacar as informações.
-
-Agora busque os dados atualizados e responda.
+IMPORTANTE: Você só deve responder com base no conteúdo que lhe for fornecido. Caso o conteúdo não tenha a informação, seja honesto e diga que ela não está disponível agora.
 
 <user_information>
 O usuário está interagindo via Telegram.
@@ -124,25 +94,27 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 #crio uma função para responder as mensagens com gpt
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto_usuario = update.message.text.lower()
 
-    texto_usuario = update.message.text #pego o que o usuário mandou e boto na variável texto_usuario
+    partidas = buscar_ultimas_partidas()
+    contexto_completo += formatar_partidas(partidas) + "\n"
 
-    conversa.append({"role": "user", "content": texto_usuario}) #adiciono o que o usuário mandou na conversa
-    conversa.append({"role": "assistant", "content": f"Hoje é {data_e_hora} (horário de Brasília)" }) #adiciono uma mensagem padrão do bot na conversa
+    noticias = buscar_ultimas_noticias()
+    contexto_completo += formatar_noticias(noticias) + "\n"
+
+    stats = buscar_stats_jogadores()
+    contexto_completo += formatar_stats(stats) + "\n"
+
+    conversa.append({"role": "user", "content": f"Data do banco de dados sobre as próximas partidas, estatísticas dos jogadores e das últimas notícias: {contexto_completo}"})
+
+    conversa.append({"role": "user", "content": texto_usuario})
 
     completion = client.chat.completions.create(
         model="gpt-4o-search-preview",
-        web_search_options={
-            "search_context_size": "high",
-        },
+        web_search_options={"search_context_size": "high"},
         messages=conversa,
-)
-    resposta_bot = completion.choices[0].message.content  # choice é um array dentro do obj response. cada item de choices representa uma possível resposta que o modelo gerou. choices[0] pega a primeira (e única) resposta gerada. depois pega o conteudo da mensagem e empacota na variável resposta_bot
-
-    conversa.append({"role": "assistant", "content": resposta_bot}) #aqui eu add a resposta do bot no contexto da conversa
-
-    # Responder o usuário
-    await update.message.reply_text(resposta_bot)
+    )
+    
 
 # Registrar o handler para mensagens de texto comuns
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
