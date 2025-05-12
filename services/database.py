@@ -1,3 +1,5 @@
+
+import sqlite3
 def create_tables():
     conn = connect()
     cursor = conn.cursor()
@@ -45,3 +47,7 @@ def create_tables():
 
     conn.commit()
     conn.close()
+
+
+def connect():
+    return sqlite3.connect("furia.db")
