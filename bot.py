@@ -126,12 +126,11 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     conversa.append({
     "role": "system",
-    "content": f"Dados da FURIA extraídos do banco:\n\n{contexto_completo.strip()}"
+    "content": f"Dados da FURIA extraídos do banco:\n\n{contexto_completo.strip()}\n\n USE ESSES DADOS PRA RESPONDER O USUÁRIO. NÃO USE NENHUM OUTRO DADO QUE NÃO SEJA ESSE.\n\n"
     })
 
     completion = client.chat.completions.create(
-        model="gpt-4o-search-preview",
-        web_search_options={"search_context_size": "high"},
+        model="gpt-4o",
         messages=conversa,
     )
 
