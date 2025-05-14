@@ -8,9 +8,9 @@ create_tables()
 with sync_playwright() as p:
     browser = p.firefox.launch(headless=False)
     page = browser.new_page()
-    
+
     page.goto("https://www.hltv.org/")
-    
+
     div_news = page.locator("div.standard-box.standard-list").first
     div_news.wait_for()
 
@@ -26,7 +26,8 @@ with sync_playwright() as p:
 
         # Ignora anúncios e featured
         if linha.locator("div.newstext").count() == 0:
-            print(f"Notícia {i+1} ignorada: sem div.newstext (provavelmente uma featured)")
+            print(
+                f"Notícia {i+1} ignorada: sem div.newstext (provavelmente uma featured)")
             continue
 
         try:

@@ -1,5 +1,6 @@
-
 import sqlite3
+
+
 def create_tables():
     conn = connect()
     cursor = conn.cursor()
@@ -41,7 +42,17 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS partida (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             oponente TEXT,
-            data TEXT
+            data TEXT,
+            evento TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS respostas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pergunta TEXT,
+            resposta TEXT,
+            data DATETIME
         )
     """)
 

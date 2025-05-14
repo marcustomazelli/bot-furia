@@ -7,7 +7,7 @@ def buscar_ultimas_partidas():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT oponente, data
+        SELECT oponente, data, evento
         FROM partida
         ORDER BY data ASC
         LIMIT 5
@@ -16,7 +16,8 @@ def buscar_ultimas_partidas():
     partidas = [
         {
             "oponente": row[0],
-            "data": row[1]
+            "data": row[1],
+            "evento": row[2]
         } for row in cursor.fetchall()
     ]
 
@@ -66,7 +67,3 @@ def buscar_stats_jogadores():
 
     conn.close()
     return stats
-
-
-
-

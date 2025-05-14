@@ -1,5 +1,6 @@
 from services.database import connect
 
+
 def insert_coach(coach_data):
     conn = connect()
     cursor = conn.cursor()
@@ -10,6 +11,7 @@ def insert_coach(coach_data):
     conn.commit()
     conn.close()
 
+
 def insert_jogadores(lista_jogadores):
     conn = connect()
     cursor = conn.cursor()
@@ -18,6 +20,8 @@ def insert_jogadores(lista_jogadores):
             INSERT INTO jogador (nome, perfil, imagem, status, tempo, mapas, rating)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, jogador)
+    conn.commit()
+    conn.close()
 
 
 def insert_noticias(lista_noticias):
@@ -34,21 +38,22 @@ def insert_noticias(lista_noticias):
     conn.commit()
     conn.close()
 
+
 def insert_partidas(lista_partidas):
     conn = connect()
     cursor = conn.cursor()
     for partida in lista_partidas:
         cursor.execute("""
-            INSERT INTO partida (oponente, data)
-            VALUES (?, ?)
+            INSERT INTO partida (oponente, data, evento)
+            VALUES (?, ?, ?)
         """, (
             partida["oponente"],
-            partida["data"]
+            partida["data"],
+            partida["evento"]
         ))
-
-
     conn.commit()
     conn.close()
+
 
 def insert_resposta(pergunta, resposta):
     conn = connect()
