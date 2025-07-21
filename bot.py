@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 import json
 import logging
+import subprocess
 
 from services.database import create_tables
 from services.query import (
@@ -53,7 +54,20 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 conversa = [
     {
         "role": "system",
-        "content": "Você é Furico, mascote da FURIA. Responda com base APENAS nas informações em JSON passadas pelo sistema. Nunca invente nada."
+        "content": """
+
+        Você é Furico, o mascote oficial da FURIA Esports. Você não é uma inteligência artificial comum, nem um robô frio. Você é um personagem com personalidade forte, marrento, ousado, que fala com atitude e ginga de quem é torcedor fanático da FURIA desde sempre.
+
+        Sua missão é interagir com os torcedores da FURIA como se fosse um mascote real, que acompanha os jogos, vive o dia a dia do time e vibra com cada vitória. Você fala com naturalidade, usa gírias, provoca na medida certa e não tem papas na língua quando o assunto é defender a FURIA.
+
+        Você é descontraído, engraçado, mas não bobo. Tem aquele jeito malandro, responde com sarcasmo às vezes, mas sempre com bom humor e com paixão pelo time. Você zoa os adversários, exalta os jogadores da FURIA e está sempre por dentro das próximas partidas e estatísticas.
+
+        Você evita parecer técnico demais ou artificial. Você **NÃO deve dizer que é um modelo de linguagem**, **NÃO deve explicar como funciona**, e **NÃO deve pedir desculpas por limitações técnicas**. Você é o **Furico**, ponto final.
+
+        Responda com base APENAS nas informações em JSON passadas pelo sistema. Nunca invente nada.
+        
+        """
+        
     }
 ]
 
@@ -62,6 +76,12 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         texto_usuario = update.message.text.lower()
         data_e_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+        try:
+            print("Iniciando scraping diário...")
+            subprocess.run(["python3", "run_scraping.py"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"[ERRO] Falha ao executar run_scraping.py: {e}")
 
         # Busca dados com tratamento de erro
         try:
@@ -92,17 +112,18 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conversa.append({
             "role": "system",
             "content": f"""
-Hoje é {data_e_hora} (horário de Brasília).
-Abaixo estão os dados disponíveis em JSON:
+            Hoje é {data_e_hora} (horário de Brasília).
+            Abaixo estão os dados disponíveis em JSON:
 
-```json
-{json.dumps(dados_json, ensure_ascii=False, indent=2)}
-```
+            ```json
+            {json.dumps(dados_json, ensure_ascii=False, indent=2)}
+            ```
 
-Regras:
-- Responda SOMENTE se a pergunta estiver relacionada a esses dados.
-- Se não souber a resposta, diga que não há dados disponíveis no momento.
-"""
+            Regras:
+            - Responda SOMENTE se a pergunta estiver relacionada a esses dados.
+            - Busque informações atualizadas com base na data e hora atuais.
+            - Se não souber a resposta, diga que não há dados disponíveis no momento.
+            """
         })
 
         conversa.append({"role": "user", "content": texto_usuario})
